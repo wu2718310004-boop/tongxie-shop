@@ -987,13 +987,6 @@ async function serveImage(env, pathname) {
 // API 路由
 // ============================================
 
-function json(data, status) {
-  return new Response(JSON.stringify(data), {
-    status: status || 200,
-    headers: { 'Content-Type': 'application/json; charset=utf-8' }
-  });
-}
-
 async function parseJSON(request) {
   try { return await request.json(); } catch (e) { return {}; }
 }
