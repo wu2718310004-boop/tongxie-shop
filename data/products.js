@@ -1,0 +1,153 @@
+// ============================================
+// 商品数据文件
+// 添加商品：复制一条记录，修改内容即可
+// 下架商品：把 inStock 改为 false
+// ============================================
+//
+// 字段说明：
+//   id         - 商品编号（数字，不要重复）
+//   name       - 商品名称
+//   category   - 分类：男童 / 女童 / 婴儿
+//   style      - 款式：运动鞋 / 凉鞋 / 板鞋 / 布鞋 / 学步鞋 / 皮鞋
+//   price      - 价格（元）
+//   sizes      - 可选尺码（中国码，如 26-35）
+//   ageRange   - 适合年龄
+//   colors     - 可选颜色
+//   material   - 材质
+//   images     - 图片路径，第一张是封面（先填空字符串，以后把图放 images 文件夹）
+//   description- 商品描述
+//   featured   - true 表示在首页推荐展示
+//   inStock    - true 有货 / false 已售罄
+//   createdAt  - 上架日期
+// ============================================
+
+const PRODUCTS = [
+  {
+    id: 1,
+    name: '夏季透气网面运动鞋',
+    category: '男童',
+    style: '运动鞋',
+    price: 89,
+    sizes: [26, 27, 28, 29, 30, 31, 32, 33, 34, 35],
+    ageRange: '3-8岁',
+    colors: ['深蓝', '黑色', '灰色'],
+    material: '网面 + 橡胶底',
+    images: [],
+    description: '超轻透气网面材质，夏天穿不闷脚。橡胶软底防滑耐磨，魔术贴设计方便穿脱，适合活泼好动的小朋友日常穿着。',
+    featured: true,
+    inStock: true,
+    createdAt: '2026-05-01'
+  },
+  {
+    id: 2,
+    name: '公主风亮片凉鞋',
+    category: '女童',
+    style: '凉鞋',
+    price: 79,
+    sizes: [24, 25, 26, 27, 28, 29, 30, 31, 32],
+    ageRange: '2-7岁',
+    colors: ['粉色', '银色', '白色'],
+    material: 'PU皮 + 防滑底',
+    images: [],
+    description: '闪亮亮片装饰，小公主们的最爱。柔软不磨脚，包头设计保护脚趾，搭扣可调节松紧，配裙子裤子都好看。',
+    featured: true,
+    inStock: true,
+    createdAt: '2026-05-02'
+  },
+  {
+    id: 3,
+    name: '软底防滑学步鞋',
+    category: '婴儿',
+    style: '学步鞋',
+    price: 59,
+    sizes: [16, 17, 18, 19, 20, 21, 22],
+    ageRange: '6个月-2岁',
+    colors: ['米色', '浅蓝', '浅粉'],
+    material: '纯棉布面 + 软牛筋底',
+    images: [],
+    description: '专为学步期宝宝设计，三分之一处可弯折符合学步鞋标准。纯棉内里亲肤透气，防滑软底让宝宝走路更稳。',
+    featured: true,
+    inStock: true,
+    createdAt: '2026-05-03'
+  },
+  {
+    id: 4,
+    name: '经典百搭小白鞋',
+    category: '男童',
+    style: '板鞋',
+    price: 85,
+    sizes: [26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36],
+    ageRange: '3-10岁',
+    colors: ['白色', '白黑拼色'],
+    material: '超纤皮 + 橡胶底',
+    images: [],
+    description: '万能百搭小白鞋，校服便服都能配。超纤皮面好打理，湿布一擦就干净。鞋底柔软有弹性，适合日常上学穿。',
+    featured: true,
+    inStock: true,
+    createdAt: '2026-05-04'
+  },
+  {
+    id: 5,
+    name: '卡通恐龙灯鞋',
+    category: '男童',
+    style: '运动鞋',
+    price: 99,
+    sizes: [26, 27, 28, 29, 30, 31, 32, 33],
+    ageRange: '3-7岁',
+    colors: ['蓝绿恐龙', '红色恐龙'],
+    material: '网面 + LED灯底',
+    images: [],
+    description: '走路会发光的恐龙鞋，小朋友的最爱！侧面有可爱的恐龙图案，七彩灯光随着脚步闪烁，穿上就不想脱下来。',
+    featured: false,
+    inStock: true,
+    createdAt: '2026-05-05'
+  },
+  {
+    id: 6,
+    name: '蝴蝶结软底布鞋',
+    category: '女童',
+    style: '布鞋',
+    price: 55,
+    sizes: [22, 23, 24, 25, 26, 27, 28, 29],
+    ageRange: '1-5岁',
+    colors: ['碎花红', '碎花蓝', '纯色粉'],
+    material: '纯棉布面 + 牛筋底',
+    images: [],
+    description: '传统手工布鞋改良款，可爱蝴蝶结装饰。纯棉透气不臭脚，软底轻便适合刚开始跑跳的小宝宝。',
+    featured: false,
+    inStock: true,
+    createdAt: '2026-05-06'
+  },
+  {
+    id: 7,
+    name: '中大童运动跑鞋',
+    category: '男童',
+    style: '运动鞋',
+    price: 119,
+    sizes: [32, 33, 34, 35, 36, 37, 38],
+    ageRange: '8-12岁',
+    colors: ['黑红', '蓝白'],
+    material: '飞织鞋面 + EVA大底',
+    images: [],
+    description: '给大孩子设计的专业运动跑鞋，飞织鞋面像袜子一样贴合。EVA 大底回弹好，体育课跑步更轻松。',
+    featured: false,
+    inStock: true,
+    createdAt: '2026-05-07'
+  },
+  {
+    id: 8,
+    name: '甜美花朵小皮鞋',
+    category: '女童',
+    style: '皮鞋',
+    price: 95,
+    sizes: [26, 27, 28, 29, 30, 31, 32, 33],
+    ageRange: '3-8岁',
+    colors: ['红色', '粉色'],
+    material: '软皮面 + 橡胶底',
+    images: [],
+    description: '精致花朵装饰小皮鞋，节日演出、拍照、走亲戚必备。鞋面柔软不磨脚后跟，小公主的鞋柜里不能少的一双。',
+    featured: false,
+    inStock: false,
+    createdAt: '2026-05-08'
+  }
+];

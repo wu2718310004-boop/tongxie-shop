@@ -1,0 +1,11 @@
+node_modules/
+.wrangler/
+dist/
+*.log
+.DS_Store
+.dev.vars
+workers/.dev.vars
+dist-upload.zip
+dist-upload.tar.gz
+workers/node_modules/
+create-dist-zip.js

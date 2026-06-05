@@ -1,0 +1,17 @@
+# 迎鑫童鞋 — Cloudflare Worker 配置
+# 部署前执行:
+#   1. npx wrangler d1 create tongxie-shop-db   → 获取 database_id
+#   2. npx wrangler secret put ADMIN_PASSWORD   → 设置管理密码（不写在此文件）
+#   3. 将 database_id 填入下方
+
+name = "tongxie-shop-api"
+main = "src/index.js"
+compatibility_date = "2024-12-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tongxie-shop-db"
+database_id = "8e95bbba-e550-443c-bddf-79b3effa8a79"
+
+[dev]
+port = 8787

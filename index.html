@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="format-detection" content="telephone=yes">
+  <title>迎鑫童鞋 - 讷河童鞋店</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- 顶部 -->
+  <header class="header" id="pageHeader">👟 迎鑫童鞋</header>
+
+  <!-- 首页大图区域 -->
+  <section class="hero">
+    <h1 id="shopName"></h1>
+    <p class="slogan" id="shopSlogan"></p>
+    <p class="desc" id="shopDesc"></p>
+  </section>
+
+  <!-- 分类入口 -->
+  <section class="category-entry">
+    <a href="list?cat=男童">
+      <span class="cat-icon">👦</span>
+      <span class="cat-name">男童鞋</span>
+      <span class="cat-count" id="boyCount"></span>
+    </a>
+    <a href="list?cat=女童">
+      <span class="cat-icon">👧</span>
+      <span class="cat-name">女童鞋</span>
+      <span class="cat-count" id="girlCount"></span>
+    </a>
+    <a href="list?cat=婴儿">
+      <span class="cat-icon">👶</span>
+      <span class="cat-name">婴儿鞋</span>
+      <span class="cat-count" id="babyCount"></span>
+    </a>
+  </section>
+
+  <!-- 推荐商品 -->
+  <div class="section-title">
+    <span>✨ 精选推荐</span>
+    <a href="list" class="more">查看全部 ›</a>
+  </div>
+  <div class="product-grid" id="featuredProducts"></div>
+
+  <!-- 底部联系入口 -->
+  <a href="contact" class="btn-contact">📞 联系店主 / 到店试穿</a>
+  <div style="height: 20px;"></div>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <a href="./" class="active">
+      <span class="icon">🏠</span> 首页
+    </a>
+    <a href="list">
+      <span class="icon">👟</span> 全部商品
+    </a>
+    <a href="contact">
+      <span class="icon">📞</span> 联系我们
+    </a>
+  </nav>
+
+  <script src="data/shop.js"></script>
+  <script src="data/products.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    (async function() {
+    // 填充店铺信息（包括顶部标题）
+    document.getElementById('pageHeader').textContent = '👟 ' + SHOP.name;
+    document.getElementById('shopName').textContent = SHOP.name;
+    document.getElementById('shopSlogan').textContent = SHOP.slogan;
+    document.getElementById('shopDesc').textContent = SHOP.description;
+    document.title = SHOP.name;
+
+    // 统计各分类商品数量（从 API 获取）
+    var allProducts = await getProducts();
+    document.getElementById('boyCount').textContent =
+      allProducts.filter(function(p) { return p.category === '男童'; }).length + '款';
+    document.getElementById('girlCount').textContent =
+      allProducts.filter(function(p) { return p.category === '女童'; }).length + '款';
+    document.getElementById('babyCount').textContent =
+      allProducts.filter(function(p) { return p.category === '婴儿'; }).length + '款';
+
+    // 分类主题
+    var CAT_THEME = {
+      '男童': { emoji: '👟', bg: 'linear-gradient(145deg, #E3F0FF, #D0E5FA)' },
+      '女童': { emoji: '👠', bg: 'linear-gradient(145deg, #FFE8F0, #FDD5E2)' },
+      '婴儿': { emoji: '🧦', bg: 'linear-gradient(145deg, #FFF4E0, #FFE8C0)' }
+    };
+
+    // 渲染推荐商品（使用 product.featured 字段，不再依赖 SHOP.featuredProductIds）
+    var featured = allProducts.filter(function(p) { return p.featured && p.inStock; });
+
+    var grid = document.getElementById('featuredProducts');
+    grid.innerHTML = featured.map(function(p) {
+      var theme = CAT_THEME[p.category] || CAT_THEME['男童'];
+      var soldOutClass = p.inStock ? '' : ' sold-out';
+      var imageHTML = p.images && p.images[0]
+        ? '<img src="' + p.images[0] + '" alt="' + p.name + '" loading="lazy">'
+        : '<span class="placeholder-emoji">' + theme.emoji + '</span>';
+      return '<a href="detail?id=' + p.id + '" class="product-card' + soldOutClass + '">' +
+        '<div class="img-box" style="background:' + theme.bg + '">' + imageHTML + '</div>' +
+        '<div class="info">' +
+          '<div class="name">' + p.name + '</div>' +
+          '<div class="meta">' +
+            '<span class="price"><span class="price-unit">¥</span>' + p.price + '</span>' +
+            '<span class="tag">' + p.ageRange + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</a>';
+    }).join('');
+    })();
+  </script>
+</body>
+</html>

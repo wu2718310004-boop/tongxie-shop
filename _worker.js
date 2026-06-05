@@ -1,0 +1,1093 @@
+// ============================================
+// 迎鑫童鞋 — Pages Advanced Mode Worker
+// 路由: /api/* /admin /images/* → Worker 处理
+//       其他请求 → env.ASSETS.fetch() → Pages 静态文件
+// ============================================
+
+const ADMIN_HTML = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>商品管理 - 迎鑫童鞋</title>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --primary: #FF6B6B; --primary-dark: #E55A5A;
+  --bg: #FFFBF7; --card: #fff; --text: #333; --text-light: #999;
+  --border: #F0E8E4; --radius: 12px;
+}
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.6;
+  max-width: 480px; margin: 0 auto; min-height: 100vh;
+}
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff; height: 50px; display: flex; align-items: center;
+  justify-content: center; font-size: 1rem; font-weight: 600;
+  box-shadow: 0 2px 12px rgba(255,107,107,0.25);
+}
+.header .back-btn {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  color: #fff; text-decoration: none; font-size: 1.3rem;
+  padding: 8px 10px; cursor: pointer; background: none; border: none;
+}
+
+/* Login */
+.login-card {
+  margin: 60px 16px 0; background: #fff; border-radius: var(--radius);
+  padding: 32px 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); text-align: center;
+}
+.login-card h2 { font-size: 1.2rem; margin-bottom: 8px; }
+.login-card .sub { font-size: 0.8rem; color: var(--text-light); margin-bottom: 24px; }
+.login-card input {
+  width: 100%; padding: 12px 16px; border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 1rem; text-align: center; outline: none;
+}
+.login-card input:focus { border-color: var(--primary); }
+.login-card button {
+  width: 100%; margin-top: 16px; padding: 12px; border: none;
+  border-radius: 10px; background: var(--primary); color: #fff;
+  font-size: 1rem; font-weight: 600; cursor: pointer;
+}
+.login-card button:active { opacity: 0.85; }
+.login-card .error { color: var(--primary); font-size: 0.8rem; margin-top: 10px; }
+
+/* Category tabs */
+.tabs {
+  display: flex; gap: 8px; padding: 12px 14px; position: sticky;
+  top: 50px; z-index: 50; background: var(--bg); overflow-x: auto;
+}
+.tabs .tab {
+  flex-shrink: 0; padding: 7px 16px; border-radius: 20px;
+  font-size: 0.82rem; background: #fff; border: 1.5px solid var(--border);
+  cursor: pointer; white-space: nowrap; transition: all 0.2s;
+}
+.tabs .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.add-bar { padding: 0 14px 10px; }
+.add-btn {
+  display: block; width: 100%; padding: 11px 0; border: 2px dashed #FFB3B3;
+  border-radius: var(--radius); background: #FFF5F5; color: var(--primary);
+  font-size: 0.9rem; font-weight: 600; cursor: pointer; text-align: center;
+  transition: background 0.15s;
+}
+.add-btn:active { background: #FFE8E8; }
+
+/* Product list */
+.product-list { padding: 0 14px 20px; }
+.prod-card {
+  background: #fff; border-radius: var(--radius); padding: 16px;
+  margin-bottom: 10px; box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  display: flex; align-items: center; gap: 12px;
+}
+.prod-card .pc-img {
+  width: 64px; height: 64px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0;
+}
+.prod-card .pc-img.has-img { background-size: cover; background-position: center; }
+.prod-card .pc-info { flex:1; min-width:0; }
+.prod-card .pc-name { font-size: 0.9rem; font-weight: 600; }
+.prod-card .pc-meta { font-size: 0.72rem; color: var(--text-light); margin-top: 2px; }
+.prod-card .pc-price { font-size: 1rem; font-weight: 700; color: var(--primary); margin-top: 4px; }
+.prod-card .pc-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.prod-card .pc-actions button {
+  padding: 6px 12px; border-radius: 8px; border: none; font-size: 0.75rem;
+  cursor: pointer; font-weight: 500; white-space: nowrap;
+}
+.btn-edit { background: #EDF4FF; color: #4DA6FF; }
+.btn-toggle-on { background: #E8F8E8; color: #4CAF50; }
+.btn-toggle-off { background: #FFF0F0; color: #FF6B6B; }
+.prod-card.sold-out { opacity: 0.55; }
+
+/* Form */
+.form-wrap { padding: 0 14px 24px; }
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block; font-size: 0.82rem; font-weight: 600;
+  margin-bottom: 5px; color: #555;
+}
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 0.9rem; outline: none; font-family: inherit;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: var(--primary);
+}
+.form-group textarea { min-height: 80px; resize: vertical; }
+.form-row { display: flex; gap: 10px; }
+.form-row .form-group { flex: 1; }
+.check-row { display: flex; align-items: center; gap: 8px; }
+.check-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--primary); }
+.check-row label { margin-bottom: 0; font-size: 0.85rem; }
+
+.btn-save {
+  width: 100%; padding: 14px; border: none; border-radius: 28px;
+  background: linear-gradient(135deg, var(--primary), #FF8E53); color: #fff;
+  font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 8px;
+  box-shadow: 0 4px 16px rgba(255,107,107,0.25);
+}
+.btn-save:active { opacity: 0.85; transform: scale(0.98); }
+.btn-save:disabled { opacity: 0.5; pointer-events: none; }
+.btn-delete {
+  width: 100%; padding: 12px; border: 1.5px solid var(--primary);
+  border-radius: 28px; background: #fff; color: var(--primary);
+  font-size: 0.9rem; cursor: pointer; margin-top: 8px;
+}
+
+/* Image section */
+.img-section { margin: 14px 0; }
+.img-section .img-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.img-section .img-thumb {
+  width: 72px; height: 72px; border-radius: 10px; background-size: cover;
+  background-position: center; position: relative; border: 1px solid var(--border);
+}
+.img-section .img-thumb .del {
+  position: absolute; top: -6px; right: -6px; width: 22px; height: 22px;
+  border-radius: 50%; background: var(--primary); color: #fff;
+  font-size: 0.75rem; border: none; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; line-height: 1;
+}
+.upload-btn {
+  display: inline-block; padding: 8px 16px; background: #EDF4FF; color: #4DA6FF;
+  border-radius: 8px; font-size: 0.82rem; cursor: pointer; font-weight: 500;
+}
+.upload-btn:active { opacity: 0.7; }
+.upload-hint { font-size: 0.7rem; color: var(--text-light); margin-top: 4px; }
+
+/* Toast */
+.toast {
+  position: fixed; top: 45%; left: 50%; transform: translate(-50%,-50%);
+  background: rgba(0,0,0,0.78); color: #fff; padding: 12px 22px;
+  border-radius: 22px; font-size: 0.85rem; z-index: 9999;
+  display: none; pointer-events: none;
+}
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
+.hidden { display: none !important; }
+.header-right {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  color: #fff; font-size: 0.82rem; cursor: pointer; padding: 4px 8px;
+  background: none; border: 1px solid rgba(255,255,255,0.5); border-radius: 6px;
+}
+</style>
+</head>
+<body>
+
+<div class="header" id="headerBar">
+  <button class="back-btn" id="btnBack" style="display:none;">&#8249; 返回</button>
+  <span id="headerTitle">商品管理</span>
+  <button class="header-right" id="btnLogout" style="display:none;">退出</button>
+</div>
+
+<!-- Login -->
+<div id="viewLogin" class="login-card">
+  <h2>🔐 管理员登录</h2>
+  <p class="sub">输入管理密码以管理商品</p>
+  <input type="password" id="loginPass" placeholder="请输入管理密码">
+  <button onclick="doLogin()">登 录</button>
+  <p class="error" id="loginError" style="display:none;"></p>
+</div>
+
+<!-- Product list -->
+<div id="viewList" class="hidden">
+  <div class="tabs" id="catTabs"></div>
+  <div class="add-bar"><button class="add-btn" onclick="newProduct()">＋ 添加商品</button></div>
+  <div class="product-list" id="productList"></div>
+  <div class="empty-state hidden" id="emptyList">
+    <p style="font-size:2rem;">📭</p>
+    <p style="margin-top:8px;">该分类暂无商品</p>
+  </div>
+</div>
+
+<!-- Product form -->
+<div id="viewForm" class="hidden">
+  <div class="form-wrap">
+    <div class="form-group"><label>商品名称 *</label><input id="fName" placeholder="如：夏季透气网面运动鞋"></div>
+    <div class="form-row">
+      <div class="form-group"><label>分类 *</label><select id="fCategory"><option>男童</option><option>女童</option><option>婴儿</option></select></div>
+      <div class="form-group"><label>款式</label><select id="fStyle"><option>运动鞋</option><option>凉鞋</option><option>板鞋</option><option>布鞋</option><option>学步鞋</option><option>皮鞋</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>价格 (元) *</label><input id="fPrice" type="number" placeholder="99" min="0" step="0.01"></div>
+      <div class="form-group"><label>适合年龄</label><input id="fAgeRange" placeholder="如：3-8岁"></div>
+    </div>
+    <div class="form-group"><label>尺码（逗号分隔）</label><input id="fSizes" placeholder="26, 27, 28, 29, 30"></div>
+    <div class="form-group"><label>颜色（逗号分隔）</label><input id="fColors" placeholder="蓝色, 黑色, 灰色"></div>
+    <div class="form-group"><label>材质</label><input id="fMaterial" placeholder="如：网面 + 橡胶底"></div>
+    <div class="form-group"><label>商品描述</label><textarea id="fDesc" placeholder="商品描述文字..."></textarea></div>
+
+    <div class="img-section">
+      <label style="font-size:0.82rem;font-weight:600;color:#555;">商品图片</label>
+      <div class="img-list" id="imgList"></div>
+      <label class="upload-btn">📷 上传图片<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" id="fileInput" onchange="uploadImage()"></label>
+      <p class="upload-hint">手机照片自动压缩，无需手动处理。支持 JPG/PNG/WebP</p>
+    </div>
+
+    <div class="check-row"><input type="checkbox" id="fFeatured"><label>首页推荐</label></div>
+    <div class="check-row"><input type="checkbox" id="fInStock" checked><label>上架中（取消勾选即下架）</label></div>
+
+    <button class="btn-save" id="btnSave" onclick="saveProduct()">保存商品</button>
+    <button class="btn-delete hidden" id="btnDelete" onclick="deleteProduct()">删除此商品</button>
+    <button class="btn-save" style="background:#ccc;margin-top:6px;box-shadow:none;" onclick="goList()">取消</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================
+// 状态管理
+// ============================================
+var state = {
+  view: 'login',    // login | list | form
+  products: [],
+  currentCat: '全部',
+  editingId: null,
+  formImages: [],
+  password: sessionStorage.getItem('admin_pass') || ''
+};
+
+var BASE = '';
+
+var CAT_THEME = {
+  '男童': { emoji: '👟', bg: 'linear-gradient(145deg, #E3F0FF, #D0E5FA)' },
+  '女童': { emoji: '👠', bg: 'linear-gradient(145deg, #FFE8F0, #FDD5E2)' },
+  '婴儿': { emoji: '🧦', bg: 'linear-gradient(145deg, #FFF4E0, #FFE8C0)' }
+};
+
+// ============================================
+// Toast
+// ============================================
+var toastTimer;
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.style.display = 'none'; }, 2000);
+}
+
+// ============================================
+// 视图切换
+// ============================================
+function showView(view) {
+  state.view = view;
+  document.getElementById('viewLogin').classList.toggle('hidden', view !== 'login');
+  document.getElementById('viewList').classList.toggle('hidden', view !== 'list');
+  document.getElementById('viewForm').classList.toggle('hidden', view !== 'form');
+  document.getElementById('btnBack').style.display = (view === 'login') ? 'none' : '';
+  document.getElementById('btnLogout').style.display = (view === 'login') ? 'none' : '';
+
+  if (view === 'login') {
+    document.getElementById('headerTitle').textContent = '商品管理';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginError').style.display = 'none';
+  } else if (view === 'list') {
+    document.getElementById('headerTitle').textContent = '商品管理';
+    loadProducts();
+  } else if (view === 'form') {
+    document.getElementById('headerTitle').textContent = state.editingId ? '编辑商品' : '添加商品';
+  }
+}
+
+// ============================================
+// 登录
+// ============================================
+function doLogin() {
+  var pass = document.getElementById('loginPass').value;
+  if (!pass) return;
+  fetch(BASE + '/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pass })
+  }).then(function(r) { return r.json(); })
+    .then(function(json) {
+      if (json.success) {
+        state.password = pass;
+        sessionStorage.setItem('admin_pass', pass);
+        document.getElementById('loginError').style.display = 'none';
+        showView('list');
+      } else {
+        document.getElementById('loginError').textContent = json.error || '密码错误';
+        document.getElementById('loginError').style.display = 'block';
+      }
+    }).catch(function() {
+      document.getElementById('loginError').textContent = '连接失败，请确认服务已启动';
+      document.getElementById('loginError').style.display = 'block';
+    });
+}
+
+// 回车登录
+document.getElementById('loginPass').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ============================================
+// 商品列表
+// ============================================
+function loadProducts(cat) {
+  var category = cat || state.currentCat;
+  state.currentCat = category;
+  var url = BASE + '/api/products';
+  if (category && category !== '全部') url += '?category=' + encodeURIComponent(category);
+
+  fetch(url).then(function(r) { return r.json(); })
+    .then(function(json) {
+      if (!json.success) return;
+      state.products = json.data || [];
+      renderTabs();
+      renderList();
+    }).catch(function() {
+      showToast('加载失败，请确认服务已启动');
+    });
+}
+
+function renderTabs() {
+  // Count by category
+  var counts = { '全部': 0, '男童': 0, '女童': 0, '婴儿': 0 };
+  fetch(BASE + '/api/products').then(function(r) { return r.json(); })
+    .then(function(json) {
+      if (!json.success) return;
+      var all = json.data || [];
+      counts['全部'] = all.length;
+      counts['男童'] = all.filter(function(p) { return p.category === '男童'; }).length;
+      counts['女童'] = all.filter(function(p) { return p.category === '女童'; }).length;
+      counts['婴儿'] = all.filter(function(p) { return p.category === '婴儿'; }).length;
+      var tabs = '';
+      ['全部', '男童', '女童', '婴儿'].forEach(function(c) {
+        var active = c === state.currentCat ? ' active' : '';
+        tabs += '<span class="tab' + active + '" data-cat="' + c + '">' + c + ' (' + counts[c] + ')</span>';
+      });
+      document.getElementById('catTabs').innerHTML = tabs;
+
+      // Bind clicks
+      var tabEls = document.querySelectorAll('#catTabs .tab');
+      tabEls.forEach(function(t) {
+        t.addEventListener('click', function() {
+          loadProducts(this.dataset.cat);
+        });
+      });
+    });
+}
+
+function renderList() {
+  var list = state.products;
+  var grid = document.getElementById('productList');
+  var empty = document.getElementById('emptyList');
+
+  if (list.length === 0) {
+    grid.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  grid.innerHTML = list.map(function(p) {
+    var theme = CAT_THEME[p.category] || CAT_THEME['男童'];
+    var soldOut = p.inStock ? '' : ' sold-out';
+    var imgHTML = p.images && p.images[0]
+      ? '<div class="pc-img has-img" style="background-image:url(' + p.images[0] + ')"></div>'
+      : '<div class="pc-img" style="background:' + (theme ? theme.bg : '#eee') + '">' + (theme ? theme.emoji : '👟') + '</div>';
+    var toggleBtn = p.inStock
+      ? '<button class="btn-toggle-on" onclick="toggleStock(' + p.id + ',false)">上架中</button>'
+      : '<button class="btn-toggle-off" onclick="toggleStock(' + p.id + ',true)">已下架</button>';
+    return '<div class="prod-card' + soldOut + '">' +
+      imgHTML +
+      '<div class="pc-info">' +
+        '<div class="pc-name">' + p.name + '</div>' +
+        '<div class="pc-meta">' + p.category + ' / ' + p.style + ' / ' + p.ageRange + '</div>' +
+        '<div class="pc-price">&yen;' + p.price + '</div>' +
+      '</div>' +
+      '<div class="pc-actions">' +
+        '<button class="btn-edit" onclick="editProduct(' + p.id + ')">编辑</button>' +
+        toggleBtn +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function toggleStock(id, toStock) {
+  fetch(BASE + '/api/products/' + id, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Password': state.password },
+    body: JSON.stringify({ inStock: toStock })
+  }).then(function(r) { return r.json(); })
+    .then(function(json) {
+      if (json.success) {
+        showToast(toStock ? '已上架' : '已下架');
+        loadProducts();
+      } else {
+        showToast(json.error || '操作失败');
+      }
+    }).catch(function() { showToast('请求失败'); });
+}
+
+// ============================================
+// 商品表单
+// ============================================
+var emojiIcons = { '男童': '👟', '女童': '👠', '婴儿': '🧦' };
+
+function editProduct(id) {
+  var p = state.products.find(function(item) { return item.id === id; });
+  if (!p) return;
+  state.editingId = id;
+  state.formImages = (p.images || []).slice();
+  document.getElementById('fName').value = p.name || '';
+  document.getElementById('fCategory').value = p.category || '男童';
+  document.getElementById('fStyle').value = p.style || '运动鞋';
+  document.getElementById('fPrice').value = p.price || '';
+  document.getElementById('fAgeRange').value = p.ageRange || '';
+  document.getElementById('fSizes').value = (p.sizes || []).join(', ');
+  document.getElementById('fColors').value = (p.colors || []).join(', ');
+  document.getElementById('fMaterial').value = p.material || '';
+  document.getElementById('fDesc').value = p.description || '';
+  document.getElementById('fFeatured').checked = p.featured || false;
+  document.getElementById('fInStock').checked = p.inStock !== undefined ? p.inStock : true;
+  document.getElementById('btnDelete').classList.remove('hidden');
+  renderFormImages();
+  showView('form');
+}
+
+function newProduct() {
+  state.editingId = null;
+  state.formImages = [];
+  document.getElementById('fName').value = '';
+  document.getElementById('fCategory').value = '男童';
+  document.getElementById('fStyle').value = '运动鞋';
+  document.getElementById('fPrice').value = '';
+  document.getElementById('fAgeRange').value = '';
+  document.getElementById('fSizes').value = '';
+  document.getElementById('fColors').value = '';
+  document.getElementById('fMaterial').value = '';
+  document.getElementById('fDesc').value = '';
+  document.getElementById('fFeatured').checked = false;
+  document.getElementById('fInStock').checked = true;
+  document.getElementById('btnDelete').classList.add('hidden');
+  renderFormImages();
+  showView('form');
+}
+
+function renderFormImages() {
+  var container = document.getElementById('imgList');
+  container.innerHTML = state.formImages.map(function(url, i) {
+    return '<div class="img-thumb" style="background-image:url(' + url + ')">' +
+      '<button class="del" onclick="removeFormImage(' + i + ')" title="删除">✕</button></div>';
+  }).join('');
+}
+
+function removeFormImage(i) {
+  state.formImages.splice(i, 1);
+  renderFormImages();
+}
+
+function uploadImage() {
+  var file = document.getElementById('fileInput').files[0];
+  if (!file) return;
+
+  var ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!ALLOWED.includes(file.type)) {
+    showToast('仅支持 JPG/PNG/WebP 格式');
+    document.getElementById('fileInput').value = '';
+    return;
+  }
+
+  showToast('正在压缩图片...');
+
+  // 读取原图
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      compressAndUpload(img, file.type === 'image/png' && hasAlpha(img) ? 'png' : 'jpeg');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  document.getElementById('fileInput').value = '';
+}
+
+function hasAlpha(img) {
+  // 简单判断：PNG 用 JPEG 压缩，WebP 原样
+  return false;
+}
+
+function compressAndUpload(img, outType) {
+  var MAX_PX = 1200;
+  var MAX_KB = 500;
+  var MAX_SIZE = MAX_KB * 1024;
+
+  var w = img.width;
+  var h = img.height;
+  var longest = Math.max(w, h);
+
+  // 等比例缩放到最长边不超过 MAX_PX
+  if (longest > MAX_PX) {
+    var scale = MAX_PX / longest;
+    w = Math.round(w * scale);
+    h = Math.round(h * scale);
+  }
+
+  // 尝试多档压缩
+  var tries = outType === 'jpeg'
+    ? [{ w: w, h: h, q: 0.75 }, { w: w, h: h, q: 0.55 }, { w: w, h: h, q: 0.4 }]
+    : [{ w: w, h: h, q: 0.75 }, { w: w, h: h, q: 0.55 }, { w: w, h: h, q: 0.4 }];
+
+  // 第三档缩到 1000px
+  var scale2 = Math.min(1000 / Math.max(w, h), 1);
+  tries.push({ w: Math.round(w * scale2), h: Math.round(h * scale2), q: 0.55 });
+  tries.push({ w: Math.round(w * scale2), h: Math.round(h * scale2), q: 0.4 });
+
+  function tryNext(idx) {
+    if (idx >= tries.length) {
+      showToast('图片太大，请换一张或重新拍近一点');
+      return;
+    }
+
+    var t = tries[idx];
+    var canvas = document.createElement('canvas');
+    canvas.width = t.w;
+    canvas.height = t.h;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, t.w, t.h);
+
+    canvas.toBlob(function(blob) {
+      if (!blob || blob.size > MAX_SIZE) {
+        tryNext(idx + 1);
+        return;
+      }
+      doUpload(blob);
+    }, 'image/' + outType, t.q);
+  }
+
+  tryNext(0);
+}
+
+function doUpload(blob) {
+  var fd = new FormData();
+  fd.append('file', blob, 'photo.' + (blob.type === 'image/png' ? 'png' : 'jpg'));
+
+  fetch(BASE + '/api/upload', {
+    method: 'POST',
+    headers: { 'X-Admin-Password': state.password },
+    body: fd
+  }).then(function(r) { return r.json(); })
+    .then(function(json) {
+      if (json.success) {
+        state.formImages.push(json.data.url);
+        renderFormImages();
+        showToast('图片已上传');
+      } else {
+        showToast(json.error || '上传失败');
+      }
+    }).catch(function() { showToast('上传失败，请检查服务'); });
+}
+
+function saveProduct() {
+  var name = document.getElementById('fName').value.trim();
+  var category = document.getElementById('fCategory').value;
+  var price = document.getElementById('fPrice').value;
+
+  if (!name) { showToast('请输入商品名称'); return; }
+  if (!category) { showToast('请选择分类'); return; }
+  if (!price) { showToast('请输入价格'); return; }
+
+  var data = {
+    name: name,
+    category: category,
+    style: document.getElementById('fStyle').value,
+    price: parseFloat(price),
+    ageRange: document.getElementById('fAgeRange').value.trim(),
+    sizes: document.getElementById('fSizes').value.split(',').map(function(s) { return parseInt(s.trim()); }).filter(function(n) { return !isNaN(n); }),
+    colors: document.getElementById('fColors').value.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; }),
+    material: document.getElementById('fMaterial').value.trim(),
+    description: document.getElementById('fDesc').value.trim(),
+    images: state.formImages,
+    featured: document.getElementById('fFeatured').checked,
+    inStock: document.getElementById('fInStock').checked
+  };
+
+  var btn = document.getElementById('btnSave');
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  var method = state.editingId ? 'PUT' : 'POST';
+  var url = BASE + '/api/products' + (state.editingId ? '/' + state.editingId : '');
+
+  fetch(url, {
+    method: method,
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Password': state.password },
+    body: JSON.stringify(data)
+  }).then(function(r) { return r.json(); })
+    .then(function(json) {
+      btn.disabled = false;
+      btn.textContent = '保存商品';
+      if (json.success) {
+        showToast(state.editingId ? '商品已更新' : '商品已添加');
+        goList();
+      } else {
+        showToast(json.error || '保存失败');
+      }
+    }).catch(function() {
+      btn.disabled = false;
+      btn.textContent = '保存商品';
+      showToast('请求失败，请检查服务');
+    });
+}
+
+function deleteProduct() {
+  if (!state.editingId) return;
+  if (!confirm('确定要删除这个商品吗？此操作不可恢复。')) return;
+
+  fetch(BASE + '/api/products/' + state.editingId, {
+    method: 'DELETE',
+    headers: { 'X-Admin-Password': state.password }
+  }).then(function(r) { return r.json(); })
+    .then(function(json) {
+      if (json.success) {
+        showToast('商品已删除');
+        goList();
+      } else {
+        showToast(json.error || '删除失败');
+      }
+    }).catch(function() { showToast('请求失败'); });
+}
+
+// ============================================
+// 导航
+// ============================================
+function goList() {
+  state.editingId = null;
+  showView('list');
+}
+
+function goBack() {
+  if (state.view === 'form') { goList(); }
+  else if (state.view === 'list') { logout(); }
+}
+
+function logout() {
+  state.password = '';
+  sessionStorage.removeItem('admin_pass');
+  state.products = [];
+  showView('login');
+}
+
+document.getElementById('btnBack').addEventListener('click', goBack);
+document.getElementById('btnLogout').addEventListener('click', logout);
+
+// ============================================
+// 初始化
+// ============================================
+if (state.password) {
+  // 验证密码是否仍有效
+  fetch(BASE + '/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: state.password })
+  }).then(function(r) { return r.json(); })
+    .then(function(json) {
+      if (json.success) {
+        showView('list');
+      } else {
+        sessionStorage.removeItem('admin_pass');
+        state.password = '';
+        showView('login');
+      }
+    }).catch(function() {
+      showView('login');
+    });
+} else {
+  showView('login');
+}
+</script>
+</body>
+</html>
+`;
+
+// ============================================
+// D1 数据库查询
+// ============================================
+
+// ============================================
+// D1 数据库查询封装
+// 对应本地 server/db.js 的接口
+// ============================================
+
+// 将 D1 行（snake_case）转为 JS 对象（camelCase + JSON 数组解析）
+function rowToProduct(row) {
+  if (!row) return null;
+  // D1 返回的字段名保持原样，不需转换
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    style: row.style,
+    price: row.price,
+    sizes: safeParseJSON(row.sizes, []),
+    ageRange: row.age_range || '',
+    colors: safeParseJSON(row.colors, []),
+    material: row.material || '',
+    images: safeParseJSON(row.images, []),
+    description: row.description || '',
+    featured: !!row.featured,
+    inStock: !!row.in_stock,
+    createdAt: row.created_at || '',
+    updatedAt: row.updated_at || ''
+  };
+}
+
+function safeParseJSON(str, fallback) {
+  try {
+    const val = JSON.parse(str);
+    return Array.isArray(val) ? val : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+// 将 JS 对象转为 D1 字段（camelCase → snake_case，JSON 序列化数组）
+function productToRow(p) {
+  return {
+    name: p.name || '',
+    category: p.category || '男童',
+    style: p.style || '运动鞋',
+    price: Number(p.price) || 0,
+    sizes: JSON.stringify(p.sizes || []),
+    age_range: p.ageRange || '',
+    colors: JSON.stringify(p.colors || []),
+    material: p.material || '',
+    images: JSON.stringify(p.images || []),
+    description: p.description || '',
+    featured: p.featured ? 1 : 0,
+    in_stock: p.inStock !== false ? 1 : 0,
+    updated_at: new Date().toISOString().split('T')[0]
+  };
+}
+
+// ============================================
+// 商品 CRUD
+// ============================================
+
+async function getAllProducts(env, category) {
+  let sql = 'SELECT * FROM products';
+  let params = [];
+  if (category && category !== '全部') {
+    sql += ' WHERE category = ?1';
+    params.push(category);
+  }
+  sql += ' ORDER BY in_stock DESC, id DESC';
+  const result = await env.DB.prepare(sql).bind(...params).all();
+  return result.results.map(rowToProduct);
+}
+
+async function getProductById(env, id) {
+  const result = await env.DB.prepare('SELECT * FROM products WHERE id = ?1')
+    .bind(id).first();
+  return rowToProduct(result || null);
+}
+
+async function createProduct(env, data) {
+  const row = productToRow(data);
+  const now = new Date().toISOString().split('T')[0];
+  const result = await env.DB.prepare(
+    `INSERT INTO products (name, category, style, price, sizes, age_range, colors, material, images, description, featured, in_stock, created_at, updated_at)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)`
+  ).bind(
+    row.name, row.category, row.style, row.price,
+    row.sizes, row.age_range, row.colors, row.material,
+    row.images, row.description, row.featured, row.in_stock,
+    now, now
+  ).run();
+  return getProductById(env, result.meta.last_row_id);
+}
+
+async function updateProduct(env, id, data) {
+  const existing = await getProductById(env, id);
+  if (!existing) return null;
+
+  // 只更新提供的字段
+  const merged = { ...existing, ...data };
+  const row = productToRow(merged);
+  await env.DB.prepare(
+    `UPDATE products SET
+       name=?1, category=?2, style=?3, price=?4, sizes=?5, age_range=?6,
+       colors=?7, material=?8, images=?9, description=?10, featured=?11,
+       in_stock=?12, updated_at=?13
+     WHERE id=?14`
+  ).bind(
+    row.name, row.category, row.style, row.price,
+    row.sizes, row.age_range, row.colors, row.material,
+    row.images, row.description, row.featured, row.in_stock,
+    row.updated_at, id
+  ).run();
+  return getProductById(env, id);
+}
+
+async function deleteProduct(env, id) {
+  const existing = await getProductById(env, id);
+  if (!existing) return false;
+  await env.DB.prepare('DELETE FROM products WHERE id = ?1').bind(id).run();
+  return true;
+}
+
+// ============================================
+// 图片存储 (D1 base64)
+// ============================================
+
+async function saveImage(env, filename, originalName, mimeType, base64Data, size) {
+  const result = await env.DB.prepare(
+    `INSERT OR REPLACE INTO images (filename, original_name, mime_type, data, size)
+     VALUES (?1, ?2, ?3, ?4, ?5)`
+  ).bind(filename, originalName, mimeType, base64Data, size).run();
+  return result.meta.last_row_id;
+}
+
+async function getImage(env, filename) {
+  const result = await env.DB.prepare(
+    'SELECT filename, mime_type, data, size FROM images WHERE filename = ?1'
+  ).bind(filename).first();
+  return result || null;
+}
+
+// db functions bundled inline
+
+
+// ============================================
+// 管理密码验证
+// ============================================
+
+// ============================================
+// 管理密码验证
+// 对应本地 server/auth.js
+// ============================================
+
+function checkAuth(request, env) {
+  const password = request.headers.get('X-Admin-Password') || '';
+  return password === env.ADMIN_PASSWORD && password !== '';
+}
+
+// checkAuth bundled inline
+
+
+// ============================================
+// 图片上传 + 返回
+// ============================================
+
+// ============================================
+// 图片上传 + 返回
+// 存 D1 base64（后续可替换为 R2）
+// ============================================
+
+// bundled inline
+// bundled inline
+
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_SIZE = 500 * 1024; // 500KB（D1 cell ~1MB，base64膨胀后约685KB）
+
+function json(data, status) {
+  return new Response(JSON.stringify(data), {
+    status: status || 200,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Access-Control-Allow-Origin': '*'
+    }
+  });
+}
+
+async function handleUpload(request, env) {
+  if (!checkAuth(request, env)) {
+    return json({ success: false, error: '需要管理员密码' }, 401);
+  }
+
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file');
+
+    if (!file || typeof file === 'string') {
+      return json({ success: false, error: '未找到上传文件' }, 400);
+    }
+
+    // 验证文件类型
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return json({ success: false, error: '仅支持 JPG/PNG/WebP 格式' }, 400);
+    }
+
+    // 验证文件大小
+    if (file.size > MAX_SIZE) {
+      return json({
+        success: false,
+        error: '图片太大（最大 500KB），请压缩或重拍。可以截图用微信发给自己，微信会自动压缩。'
+      }, 400);
+    }
+
+    // 读取文件内容并转 base64
+    const arrayBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+
+    // 手动 base64 编码（避免 btoa 的 stack overflow 问题）
+    let base64 = '';
+    const chunk = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunk) {
+      const slice = uint8Array.subarray(i, i + chunk);
+      base64 += String.fromCharCode.apply(null, slice);
+    }
+    base64 = btoa(base64);
+
+    // 生成文件名
+    const ext = file.type === 'image/jpeg' ? 'jpg'
+      : file.type === 'image/png' ? 'png' : 'webp';
+    const filename = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+
+    await saveImage(env, filename, file.name, file.type, base64, file.size);
+
+    return json({
+      success: true,
+      data: {
+        url: '/images/' + filename,
+        filename: file.name,
+        size: file.size
+      }
+    });
+
+  } catch (e) {
+    return json({ success: false, error: '上传失败：' + (e.message || '未知错误') }, 500);
+  }
+}
+
+async function serveImage(env, pathname) {
+  const filename = pathname.replace('/images/', '');
+  if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return new Response('Not Found', { status: 404 });
+  }
+
+  try {
+    const img = await getImage(env, filename);
+    if (!img) return new Response('Not Found', { status: 404 });
+
+    const binary = Uint8Array.from(atob(img.data), c => c.charCodeAt(0));
+    return new Response(binary, {
+      headers: {
+        'Content-Type': img.mime_type,
+        'Cache-Control': 'public, max-age=86400',
+        'Content-Length': String(binary.length),
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+  } catch (e) {
+    return new Response('Not Found', { status: 404 });
+  }
+}
+
+// upload functions bundled inline
+
+
+// ============================================
+// API 路由
+// ============================================
+
+function json(data, status) {
+  return new Response(JSON.stringify(data), {
+    status: status || 200,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' }
+  });
+}
+
+async function parseJSON(request) {
+  try { return await request.json(); } catch (e) { return {}; }
+}
+
+function parseRoute(pathname) {
+  var m = pathname.match(/^\/api\/products\/(\d+)$/);
+  if (m) return { type: 'productById', id: parseInt(m[1]) };
+  m = pathname.match(/^\/images\/([^/]+)$/);
+  if (m) return { type: 'image', filename: m[1] };
+  return { type: pathname };
+}
+
+async function handleAPI(request, env, url, pathname) {
+  var method = request.method.toUpperCase();
+  var route = parseRoute(pathname);
+
+  if (method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password'
+      }
+    });
+  }
+
+  if (method === 'GET' && pathname === '/admin') {
+    return new Response(ADMIN_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  }
+
+  if (method === 'POST' && pathname === '/api/auth/login') {
+    var body = await parseJSON(request);
+    if (body.password && body.password === env.ADMIN_PASSWORD) return json({ success: true, data: { ok: true } });
+    return json({ success: false, error: '密码错误' }, 401);
+  }
+
+  if (method === 'POST' && pathname === '/api/upload') { return handleUpload(request, env); }
+  if (method === 'GET' && route.type === 'image') { return serveImage(env, pathname); }
+
+  if (method === 'GET' && pathname === '/api/products') {
+    var category = url.searchParams.get('category');
+    return json({ success: true, data: await getAllProducts(env, category) });
+  }
+
+  if (method === 'GET' && route.type === 'productById') {
+    var product = await getProductById(env, route.id);
+    if (!product) return json({ success: false, error: '商品不存在' }, 404);
+    return json({ success: true, data: product });
+  }
+
+  if (method === 'POST' && pathname === '/api/products') {
+    if (!checkAuth(request, env)) return json({ success: false, error: '需要管理员密码' }, 401);
+    var data = await parseJSON(request);
+    if (!data.name || !data.category) return json({ success: false, error: '商品名称和分类不能为空' }, 400);
+    return json({ success: true, data: await createProduct(env, data) }, 201);
+  }
+
+  if (method === 'PUT' && route.type === 'productById') {
+    if (!checkAuth(request, env)) return json({ success: false, error: '需要管理员密码' }, 401);
+    var updateData = await parseJSON(request);
+    var updated = await updateProduct(env, route.id, updateData);
+    if (!updated) return json({ success: false, error: '商品不存在' }, 404);
+    return json({ success: true, data: updated });
+  }
+
+  if (method === 'DELETE' && route.type === 'productById') {
+    if (!checkAuth(request, env)) return json({ success: false, error: '需要管理员密码' }, 401);
+    var deleted = await deleteProduct(env, route.id);
+    if (!deleted) return json({ success: false, error: '商品不存在' }, 404);
+    return json({ success: true, data: { deleted: true } });
+  }
+
+  return json({ success: false, error: 'Not found' }, 404);
+}
+
+// ============================================
+// Pages Advanced Mode 入口
+// ============================================
+
+export default {
+  async fetch(request, env, ctx) {
+    var url = new URL(request.url);
+    var pathname = url.pathname;
+
+    if (pathname === '/admin' || pathname.startsWith('/api/') || pathname.startsWith('/images/')) {
+      try {
+        return await handleAPI(request, env, url, pathname);
+      } catch (e) {
+        return json({ success: false, error: '服务器内部错误' }, 500);
+      }
+    }
+
+    // 其他所有请求 → Pages 静态文件
+    return env.ASSETS.fetch(request);
+  }
+};

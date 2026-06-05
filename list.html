@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>全部商品 - 迎鑫童鞋</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="header">
+    <a href="./" class="back-btn">‹ 返回</a>
+    全部商品
+  </header>
+
+  <!-- 分类切换 -->
+  <div class="category-tabs" id="categoryTabs">
+    <span class="tab active" data-cat="全部">全部</span>
+    <span class="tab" data-cat="男童">👦 男童</span>
+    <span class="tab" data-cat="女童">👧 女童</span>
+    <span class="tab" data-cat="婴儿">👶 婴儿</span>
+  </div>
+
+  <!-- 商品列表 -->
+  <div class="product-grid" id="productGrid"></div>
+  <div class="empty-state" id="emptyState" style="display:none;">
+    <span class="empty-icon">📭</span>
+    <p>该分类暂无商品</p>
+  </div>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <a href="./"><span class="icon">🏠</span> 首页</a>
+    <a href="list" class="active"><span class="icon">👟</span> 全部商品</a>
+    <a href="contact"><span class="icon">📞</span> 联系我们</a>
+  </nav>
+
+  <script src="data/products.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    // 分类主题
+    var CAT_THEME = {
+      '男童': { emoji: '👟', bg: 'linear-gradient(145deg, #E3F0FF, #D0E5FA)' },
+      '女童': { emoji: '👠', bg: 'linear-gradient(145deg, #FFE8F0, #FDD5E2)' },
+      '婴儿': { emoji: '🧦', bg: 'linear-gradient(145deg, #FFF4E0, #FFE8C0)' }
+    };
+
+    // 渲染商品列表
+    async function renderProducts(category) {
+      var grid = document.getElementById('productGrid');
+      var empty = document.getElementById('emptyState');
+
+      var list = await getProducts(category || null);
+
+      if (list.length === 0) {
+        grid.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+
+      empty.style.display = 'none';
+      grid.innerHTML = list.map(function(p) {
+        var theme = CAT_THEME[p.category] || CAT_THEME['男童'];
+        var soldOutClass = p.inStock ? '' : ' sold-out';
+        var imageHTML = p.images && p.images[0]
+          ? '<img src="' + p.images[0] + '" alt="' + p.name + '" loading="lazy">'
+          : '<span class="placeholder-emoji">' + theme.emoji + '</span>';
+        return '<a href="detail?id=' + p.id + '" class="product-card' + soldOutClass + '">' +
+          '<div class="img-box" style="background:' + theme.bg + '">' + imageHTML + '</div>' +
+          '<div class="info">' +
+            '<div class="name">' + p.name + '</div>' +
+            '<div class="meta">' +
+              '<span class="price"><span class="price-unit">¥</span>' + p.price + '</span>' +
+              '<span class="tag">' + p.ageRange + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</a>';
+      }).join('');
+    }
+
+    // 分类切换
+    var currentCat = '全部';
+    var tabs = document.querySelectorAll('#categoryTabs .tab');
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', async function() {
+        tabs.forEach(function(t) { t.classList.remove('active'); });
+        this.classList.add('active');
+        currentCat = this.dataset.cat;
+        await renderProducts(currentCat);
+      });
+    });
+
+    // 从 URL 读取预设分类（如 list.html?cat=女童）
+    var params = new URLSearchParams(window.location.search);
+    var presetCat = params.get('cat');
+    if (presetCat) {
+      currentCat = presetCat;
+      tabs.forEach(function(t) {
+        t.classList.remove('active');
+        if (t.dataset.cat === presetCat) t.classList.add('active');
+      });
+    }
+
+    renderProducts(currentCat);
+  </script>
+</body>
+</html>

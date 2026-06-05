@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="format-detection" content="telephone=yes">
+  <title>商品详情 - 迎鑫童鞋</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="header">
+    <a href="javascript:history.back()" class="back-btn">‹ 返回</a>
+    商品详情
+  </header>
+
+  <!-- 商品图片区 -->
+  <div class="detail-images" id="productImage"></div>
+
+  <!-- 基本信息 -->
+  <div class="detail-info">
+    <h2 class="name" id="productName"></h2>
+    <div class="price-row">
+      <span class="price" id="productPrice"></span>
+    </div>
+    <div class="detail-meta" id="productMeta"></div>
+  </div>
+
+  <!-- 尺码 -->
+  <div class="detail-section">
+    <h3>📏 可选尺码</h3>
+    <div class="size-tags" id="productSizes"></div>
+  </div>
+
+  <!-- 颜色 -->
+  <div class="detail-section" id="colorSection" style="display:none;">
+    <h3>🎨 可选颜色</h3>
+    <div class="color-tags" id="productColors"></div>
+  </div>
+
+  <!-- 商品描述 -->
+  <div class="detail-section">
+    <h3>📝 商品详情</h3>
+  </div>
+  <div class="product-desc" id="productDesc"></div>
+
+  <!-- 联系按钮 -->
+  <a href="contact" class="btn-contact">💬 喜欢这款？联系店主</a>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <a href="./"><span class="icon">🏠</span> 首页</a>
+    <a href="list"><span class="icon">👟</span> 全部商品</a>
+    <a href="contact"><span class="icon">📞</span> 联系我们</a>
+  </nav>
+
+  <script src="data/shop.js"></script>
+  <script src="data/products.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    (async function() {
+    // 分类主题色
+    var CAT_THEME = {
+      '男童': { emoji: '👟', bg: 'linear-gradient(145deg, #E3F0FF 0%, #D0E5FA 50%, #E8F2FF 100%)' },
+      '女童': { emoji: '👠', bg: 'linear-gradient(145deg, #FFE8F0 0%, #FDD5E2 50%, #FFEDF3 100%)' },
+      '婴儿': { emoji: '🧦', bg: 'linear-gradient(145deg, #FFF4E0 0%, #FFE8C0 50%, #FFF6E8 100%)' }
+    };
+
+    // 从 URL 获取商品 ID
+    var params = new URLSearchParams(window.location.search);
+    var productId = parseInt(params.get('id'));
+    var product = await getProduct(productId);
+
+    if (!product) {
+      document.body.innerHTML = '<div class="empty-state" style="padding-top:120px;"><span class="empty-icon">😢</span><p>商品不存在或已下架</p><a href="list" class="btn-outline">返回商品列表</a></div>';
+    } else {
+      document.title = product.name + ' - ' + SHOP.name;
+
+      var theme = CAT_THEME[product.category] || CAT_THEME['男童'];
+
+      // 图片区（使用分类主题色背景）
+      var imgBox = document.getElementById('productImage');
+      imgBox.style.background = theme.bg;
+      if (product.images && product.images[0]) {
+        imgBox.innerHTML = '<img src="' + product.images[0] + '" alt="' + product.name + '">';
+      } else {
+        imgBox.innerHTML = '<span class="placeholder-emoji">' + theme.emoji + '</span>';
+      }
+
+      // 名称 + 售罄标记
+      var nameEl = document.getElementById('productName');
+      nameEl.textContent = product.name;
+      if (!product.inStock) {
+        nameEl.innerHTML += ' <span class="badge-soldout">已售罄</span>';
+      }
+
+      // 价格
+      document.getElementById('productPrice').innerHTML =
+        '<span class="unit">¥</span>' + product.price;
+
+      // 元数据标签
+      document.getElementById('productMeta').innerHTML =
+        '<span class="meta-item">' + product.category + '</span>' +
+        '<span class="meta-item">' + product.style + '</span>' +
+        '<span class="meta-item">' + product.ageRange + '</span>' +
+        '<span class="meta-item">' + product.material + '</span>';
+
+      // 尺码
+      document.getElementById('productSizes').innerHTML =
+        product.sizes.map(function(s) { return '<span class="size-tag">' + s + '</span>'; }).join('');
+
+      // 颜色
+      if (product.colors && product.colors.length > 0) {
+        document.getElementById('colorSection').style.display = 'block';
+        document.getElementById('productColors').innerHTML =
+          product.colors.map(function(c) { return '<span class="color-tag">' + c + '</span>'; }).join('');
+      }
+
+      // 描述
+      document.getElementById('productDesc').textContent = product.description;
+    }
+    })();
+  </script>
+</body>
+</html>
